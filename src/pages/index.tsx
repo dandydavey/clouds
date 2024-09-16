@@ -1,24 +1,17 @@
-import { useState, useRef } from 'react';
+import { useState } from "react";
+import Image from "next/image";
+import Overlay from "@/components/Overlay";
 
-function Box({ audioFile, currentAudio, setCurrentAudio }: { audioFile: string, currentAudio: HTMLAudioElement | null, setCurrentAudio: (audio: HTMLAudioElement | null) => void }) {
+function Box({ audioFile }: { audioFile: string }) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const playAudio = () => {
-    if (currentAudio && currentAudio !== audioRef.current) {
-      currentAudio.pause();
-      currentAudio.currentTime = 0;
-    }
-
     if (!isPlaying) {
       const audio = new Audio(audioFile);
-      audioRef.current = audio;
-      setCurrentAudio(audio);
       setIsPlaying(true);
       audio.play();
       audio.onended = () => {
         setIsPlaying(false);
-        setCurrentAudio(null);
       };
     }
   };
@@ -26,7 +19,9 @@ function Box({ audioFile, currentAudio, setCurrentAudio }: { audioFile: string, 
   return (
     <>
       <div
-        className={`w-10 h-10 border-2 bg-pink-600 ${isPlaying ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`w-10 h-10 border-2 bg-pink-600 ${
+          isPlaying ? "cursor-not-allowed" : "cursor-pointer"
+        }`}
         onClick={playAudio}
       ></div>
     </>
@@ -34,8 +29,6 @@ function Box({ audioFile, currentAudio, setCurrentAudio }: { audioFile: string, 
 }
 
 export default function Home() {
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
-
   return (
     <>
       <main
@@ -46,6 +39,7 @@ export default function Home() {
           backgroundPosition: "center",
         }}
       >
+        <Overlay></Overlay>
         <div
           className="absolute"
           style={{
@@ -54,8 +48,8 @@ export default function Home() {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <Box audioFile="/Test.m4a" currentAudio={currentAudio} setCurrentAudio={setCurrentAudio} />
-          <Box audioFile="/Test2.m4a" currentAudio={currentAudio} setCurrentAudio={setCurrentAudio} />
+          <Box audioFile="/Test.m4a" />
+          <Box audioFile="/Test2.m4a" />
         </div>
       </main>
     </>
