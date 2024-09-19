@@ -4,7 +4,6 @@ import { useState } from "react";
 
 export default function Clouds() {
   const [clicked, setClicked] = useState(false);
-
   return (
     <div
       style={{
@@ -15,32 +14,17 @@ export default function Clouds() {
         height: "1423px",
       }}
     >
-      {/* <Image
+      <Image
         src="/sky_above_clouds_iv.png"
         alt="Sky Above The Clouds IV by Georgia O'Keefe"
         width={2560}
         height={1423}
         layout="intrinsic"
-        className={`absolute ${clicked ? "clicked" : ""}`}
+        className={`absolute`}
         style={{ top: 0, left: 0 }} // Added inline style for positioning
-      ></Image> */}
+      ></Image>
       <svg
-        className="absolute"
-        style={{ top: 0, left: 0, width: "100%", height: "100%" }}
-        onClick={() => {
-          console.log("clicked");
-        }}
-      >
-        <image
-          href="/sky_above_clouds_iv.png"
-          width="2560"
-          height="1423"
-          // clipPath="url(#clip-path)"
-          className={clicked ? "clicked" : ""}
-        />
-      </svg>
-      {/* <svg
-        className="absolute"
+        className={`absolute ${clicked ? "clicked" : ""}`}
         style={{ top: 0, left: 0, width: "100%", height: "100%" }}
       >
         <defs>
@@ -53,7 +37,6 @@ export default function Clouds() {
           width="2560"
           height="1423"
           clipPath="url(#clip-path)"
-          className={clicked ? "clicked" : ""}
         />
         <rect
           width="100%"
@@ -62,9 +45,8 @@ export default function Clouds() {
           clipPath="url(#clip-path)"
           onClick={() => setClicked(!clicked)}
         />
-      </svg> */}
-      <Outlines></Outlines>
-      <div> Hello World</div>
+      </svg>
+      {/* <Outlines></Outlines> */}
     </div>
   );
 }
