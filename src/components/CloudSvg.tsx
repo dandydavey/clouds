@@ -3,16 +3,24 @@ import React from "react";
 interface CloudSvgProps {
   clickedIndices: boolean[];
   setClickedIndices: React.Dispatch<React.SetStateAction<boolean[]>>;
+  hoveredIndex: number | null;
+  setHoveredIndex: React.Dispatch<React.SetStateAction<number | null>>;
   paths: string[];
 }
 
-export function EffectAreas({ clickedIndices, paths }: CloudSvgProps) {
+export function EffectAreas({
+  clickedIndices,
+  hoveredIndex,
+  paths,
+}: CloudSvgProps) {
   return (
     <>
       {paths.map((path, index) => (
         <svg
           key={index}
-          className={`absolute ${clickedIndices[index] ? "clicked" : ""}`}
+          className={`absolute ${
+            clickedIndices[index] ? "clicked" : hoveredIndex === index ? "hovered" : ""
+          }`}
           style={{ top: 0, left: 0, width: "100%", height: "100%" }}
           viewBox="0 0 2560 1423"
         >
@@ -43,6 +51,7 @@ export function EffectAreas({ clickedIndices, paths }: CloudSvgProps) {
 export default function ClickAreas({
   setClickedIndices,
   paths,
+  setHoveredIndex,
 }: CloudSvgProps) {
   const handleClick = (index: number) => {
     console.log("clicked ", index);
@@ -51,6 +60,11 @@ export default function ClickAreas({
       newClickedPaths[index] = !newClickedPaths[index];
       return newClickedPaths;
     });
+  };
+
+  const handleHover = (index: number | null) => {
+    console.log("hovered ", index);
+    setHoveredIndex(index);
   };
 
   return (
@@ -73,6 +87,8 @@ export default function ClickAreas({
           height="100%"
           opacity={0}
           onClick={() => handleClick(index)}
+          onMouseEnter={() => handleHover(index)}
+          onMouseLeave={() => handleHover(null)}
           clipPath={`url(#clip-path-${index})`}
         />
       ))}

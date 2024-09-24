@@ -26,6 +26,7 @@ interface SvgResult {
 
 export default function Clouds({ paths }: CloudsProps) {
   const [clickedIndices, setClickedIndices] = useState<boolean[]>([]);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   return (
     <div
@@ -49,11 +50,15 @@ export default function Clouds({ paths }: CloudsProps) {
       <EffectAreas
         clickedIndices={clickedIndices}
         setClickedIndices={setClickedIndices}
+        hoveredIndex={hoveredIndex}
+        setHoveredIndex={setHoveredIndex}
         paths={paths}
       />
       <ClickOutlines
         clickedIndices={clickedIndices}
         setClickedIndices={setClickedIndices}
+        hoveredIndex={hoveredIndex}
+        setHoveredIndex={setHoveredIndex}
         paths={paths}
       />
     </div>
