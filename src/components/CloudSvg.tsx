@@ -1,4 +1,5 @@
 import React from "react";
+import { updateScreenIndex } from "../lib/firebase";
 
 interface CloudSvgProps {
   clickedIndices: boolean[];
@@ -19,7 +20,11 @@ export function EffectAreas({
         <svg
           key={index}
           className={`absolute ${
-            clickedIndices[index] ? "clicked" : hoveredIndex === index ? "hovered" : ""
+            clickedIndices[index]
+              ? "clicked"
+              : hoveredIndex === index
+              ? "hovered"
+              : ""
           }`}
           style={{ top: 0, left: 0, width: "100%", height: "100%" }}
           viewBox="0 0 2560 1423"
@@ -60,6 +65,11 @@ export default function ClickAreas({
       newClickedPaths[index] = !newClickedPaths[index];
       return newClickedPaths;
     });
+
+    // Send click event to db.
+    updateScreenIndex(index)
+      .then(() => console.log("Click event sent to db successfully"))
+      .catch((error) => console.error("Error sending click to db:", error));
   };
 
   const handleHover = (index: number | null) => {
