@@ -1,5 +1,6 @@
 import { initializeApp, FirebaseApp } from "firebase/app";
 import { getDatabase, Database, ref, set, onValue, off } from "firebase/database";
+import { getStorage, ref as storageRef, getDownloadURL } from "firebase/storage";
 
 // Your Firebase configuration object
 const firebaseConfig = {
@@ -14,11 +15,13 @@ const firebaseConfig = {
 
 let app: FirebaseApp;
 let db: Database;
+let storage: ReturnType<typeof getStorage>;
 
 export function initializeFirebase() {
   if (!app) {
     app = initializeApp(firebaseConfig);
     db = getDatabase(app);
+    storage = getStorage(app);
   }
 }
 
@@ -49,4 +52,18 @@ export function listenToScreenIndex(screenNumber: number, callback: (index: numb
   return () => off(screenRef);
 }
 
-export { db };
+export async function getVideoUrl(filename: string): Promise<string> {
+  if (!storage) {
+    throw new Error("Firebase has not been initialized. Call initializeFirebase() first.");
+  }
+  const videoRef = storageRef(storage, filename);
+  try {
+    const url = await getDownloadURL(videoRef);
+    return url;
+  } catch (error) {
+    console.error("Error getting download URL:", error);
+    throw error;
+  }
+}
+
+export { db, storage };

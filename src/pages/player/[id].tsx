@@ -1,19 +1,36 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { initializeFirebase, listenToScreenIndex } from "../../lib/firebase";
+import {
+  initializeFirebase,
+  listenToScreenIndex,
+  getVideoUrl,
+} from "../../lib/firebase";
 
 export default function PlayerPage() {
   const router = useRouter();
   const { id } = router.query;
   const [index, setIndex] = useState<number | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     initializeFirebase();
 
     if (id === "0" || id === "1") {
-      const unsubscribe = listenToScreenIndex(parseInt(id), (newIndex) => {
-        setIndex(newIndex);
-      });
+      const unsubscribe = listenToScreenIndex(
+        parseInt(id),
+        async (newIndex) => {
+          setIndex(newIndex);
+          try {
+            console.log("Fetching video URL for index:", newIndex);
+            //   const url = await getVideoUrl(`${newIndex}.mov`);
+            const url = await getVideoUrl(`videos/IMG_3083.mov`);
+            console.log("Got url: ", url);
+            setVideoUrl(url);
+          } catch (error) {
+            console.error("Error fetching video URL:", error);
+          }
+        }
+      );
 
       return () => {
         unsubscribe();
@@ -30,15 +47,21 @@ export default function PlayerPage() {
       style={{
         width: "100vw",
         height: "100vh",
-        backgroundColor: index === null ? "black" : "white",
+        backgroundColor: "black",
         display: "flex",
+        flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        fontSize: "48px",
+        fontSize: "24px",
         color: "black",
       }}
     >
       {index !== null && <div>Index: {index}</div>}
+      {videoUrl && (
+        <video src={videoUrl} controls autoPlay style={{ minHeight: "100%" }}>
+          Your browser does not support the video tag.
+        </video>
+      )}
     </div>
   );
 }
