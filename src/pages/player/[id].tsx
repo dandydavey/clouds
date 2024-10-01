@@ -33,20 +33,19 @@ export default function PlayerPage() {
 
     if (id === "0" || id === "1") {
       const unsubscribe = listenToIndex(async (newIndex) => {
-        if (newIndex % 2 !== parseInt(id)) {
+        // if (newIndex % 2 !== parseInt(id)) {
+        if (false) {
           return;
         } else {
           setIndex(newIndex);
           try {
             console.log("Fetching video URL for index:", newIndex);
-            const videoExists = await checkVideoExists(
-              `videos/${newIndex}.mov`
-            );
+            const videoExists = await checkVideoExists(newIndex);
             if (videoExists) {
-              const url = await getVideoUrl(`videos/${newIndex}.mov`);
+              const url = await getVideoUrl(newIndex);
               setVideoUrl(url);
             } else {
-              console.log(`Video ${newIndex}.mov does not exist`);
+              console.log(`No videos for index ${newIndex}`);
               setVideoUrl(null);
             }
           } catch (error) {

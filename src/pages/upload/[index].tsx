@@ -19,8 +19,7 @@ export default function Upload() {
     setUploading(true);
     try {
       await uploadVideo(
-        // TODO: Change the file extension depending on the file type.
-        `videos/${index}.mov`,
+        parseInt(index as string),
         file,
         (progress) => setProgress(progress),
         () => {
