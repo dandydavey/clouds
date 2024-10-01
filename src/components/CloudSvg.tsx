@@ -1,5 +1,6 @@
 import React from "react";
 import { updateIndex } from "../lib/firebase";
+import { useCallback } from "react";
 
 interface CloudSvgProps {
   clickedIndices: boolean[];
@@ -58,22 +59,37 @@ export default function ClickAreas({
   paths,
   setHoveredIndex,
 }: CloudSvgProps) {
-  const handleClick = (index: number) => {
-    console.log("clicked ", index);
-    setClickedIndices((prev) => {
-      const newClickedPaths = [...prev];
-      newClickedPaths[index] = !newClickedPaths[index];
-      return newClickedPaths;
-    });
+  const handleClick = useCallback(
+    (index: number) => {
+      console.log("clicked ", index);
+      setClickedIndices((prev) => {
+        const newClickedPaths = [...prev];
+        newClickedPaths[index] = !newClickedPaths[index];
 
-    // Send click event to db.
-    updateIndex(index)
-      .then(() => console.log("Click event sent to db successfully"))
-      .catch((error) => console.error("Error sending click to db:", error));
-  };
+        // Set a timer to remove the clicked state after 5 seconds
+        if (newClickedPaths[index]) {
+          setTimeout(() => {
+            setClickedIndices((current) => {
+              const updatedPaths = [...current];
+              console.log("removed click state from  ", index);
+              updatedPaths[index] = false;
+              return updatedPaths;
+            });
+          }, 5000);
+        }
+
+        return newClickedPaths;
+      });
+
+      // Send click event to db.
+      updateIndex(index)
+        .then(() => console.log("Click event sent to db successfully"))
+        .catch((error) => console.error("Error sending click to db:", error));
+    },
+    [setClickedIndices]
+  );
 
   const handleHover = (index: number | null) => {
-    console.log("hovered ", index);
     setHoveredIndex(index);
   };
 
