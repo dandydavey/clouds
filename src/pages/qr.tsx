@@ -19,7 +19,7 @@ export default function QRUploadPage() {
   }, []);
 
   const uploadUrl =
-    index !== null ? `${window.location.origin}/upload/${index}.html` : "";
+    index !== null ? `${window.location.origin}/upload/${index}` : "";
 
   return (
     <div className="w-screen h-screen bg-black flex flex-col justify-center items-center text-white">
@@ -35,8 +35,10 @@ export default function QRUploadPage() {
           bgColor="#ffffff"
           fgColor="#000000"
           level="H"
+          className="mb-8"
         />
       )}
+      <h1 className="font-georgia text-2xl mb-8 text-center"> {uploadUrl}</h1>
     </div>
   );
 }

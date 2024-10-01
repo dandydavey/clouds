@@ -24,10 +24,11 @@ export default function PlayerPage() {
           setIndex(newIndex);
           try {
             console.log("Fetching video URL for index:", newIndex);
-            const videoExists = await checkVideoExists(`${newIndex}.mov`);
+            const videoExists = await checkVideoExists(
+              `videos/${newIndex}.mov`
+            );
             if (videoExists) {
-              const url = await getVideoUrl(`${newIndex}.mov`);
-              console.log("Got url: ", url);
+              const url = await getVideoUrl(`videos/${newIndex}.mov`);
               setVideoUrl(url);
             } else {
               console.log(`Video ${newIndex}.mov does not exist`);

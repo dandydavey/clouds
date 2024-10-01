@@ -12,6 +12,8 @@ import {
   ref as storageRef,
   getDownloadURL,
   getMetadata,
+  uploadBytesResumable,
+  UploadTask,
 } from "firebase/storage";
 
 // Your Firebase configuration object
@@ -99,6 +101,44 @@ export function checkVideoExists(filename: string): Promise<boolean> {
       }
       throw error;
     });
+}
+
+export async function uploadVideo(
+  filename: string,
+  file: File,
+  onProgress: (progress: number) => void,
+  onComplete: () => void
+): Promise<void> {
+  if (!storage) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const location = storageRef(storage, filename);
+
+  // Create an upload task
+  const uploadTask: UploadTask = uploadBytesResumable(location, file);
+
+  // Listen for state changes, errors, and completion of the upload
+  uploadTask.on(
+    "state_changed",
+    (snapshot) => {
+      // Calculate and report progress
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      onProgress(progress);
+    },
+    (error) => {
+      console.error("Error uploading file:", error);
+      onComplete(); // Call onComplete even if there's an error
+    },
+    () => {
+      console.log("Upload completed successfully");
+      onComplete();
+    }
+  );
+
+  // Wait for the upload to complete
+  await uploadTask;
 }
 
 export { db, storage };
