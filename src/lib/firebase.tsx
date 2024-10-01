@@ -1,6 +1,18 @@
 import { initializeApp, FirebaseApp } from "firebase/app";
-import { getDatabase, Database, ref, set, onValue, off } from "firebase/database";
-import { getStorage, ref as storageRef, getDownloadURL } from "firebase/storage";
+import {
+  getDatabase,
+  Database,
+  ref,
+  set,
+  onValue,
+  off,
+} from "firebase/database";
+import {
+  getStorage,
+  ref as storageRef,
+  getDownloadURL,
+  getMetadata,
+} from "firebase/storage";
 
 // Your Firebase configuration object
 const firebaseConfig = {
@@ -25,36 +37,39 @@ export function initializeFirebase() {
   }
 }
 
-export function updateScreenIndex(index: number) {
+export function updateIndex(index: number) {
   if (!db) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
     );
   }
-  const screenNumber = index % 2;
-  const screenRef = ref(db, `screens/${screenNumber}`);
-  return set(screenRef, { index: index });
+  const cloudRef = ref(db, `clouds/clicked`);
+  return set(cloudRef, { index: index });
 }
 
-export function listenToScreenIndex(screenNumber: number, callback: (index: number) => void) {
+export function listenToIndex(callback: (index: number) => void) {
   if (!db) {
-    throw new Error("Firebase has not been initialized. Call initializeFirebase() first.");
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
   }
-  const screenRef = ref(db, `screens/${screenNumber}`);
-  onValue(screenRef, (snapshot) => {
+  const cloudRef = ref(db, `clouds/clicked`);
+  onValue(cloudRef, (snapshot) => {
     const data = snapshot.val();
-    if (data && typeof data.index === 'number') {
+    if (data && typeof data.index === "number") {
       callback(data.index);
     }
   });
 
   // Return a function to unsubscribe
-  return () => off(screenRef);
+  return () => off(cloudRef);
 }
 
 export async function getVideoUrl(filename: string): Promise<string> {
   if (!storage) {
-    throw new Error("Firebase has not been initialized. Call initializeFirebase() first.");
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
   }
   const videoRef = storageRef(storage, filename);
   try {
@@ -64,6 +79,26 @@ export async function getVideoUrl(filename: string): Promise<string> {
     console.error("Error getting download URL:", error);
     throw error;
   }
+}
+
+export function checkVideoExists(filename: string): Promise<boolean> {
+  if (!storage) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const videoRef = storageRef(storage, filename);
+
+  return getMetadata(videoRef)
+    .then(() => {
+      return true;
+    })
+    .catch((error) => {
+      if (error.code === "storage/object-not-found") {
+        return false;
+      }
+      throw error;
+    });
 }
 
 export { db, storage };

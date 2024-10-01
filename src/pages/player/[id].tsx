@@ -2,8 +2,9 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import {
   initializeFirebase,
-  listenToScreenIndex,
+  listenToIndex,
   getVideoUrl,
+  checkVideoExists,
 } from "../../lib/firebase";
 
 export default function PlayerPage() {
@@ -16,21 +17,27 @@ export default function PlayerPage() {
     initializeFirebase();
 
     if (id === "0" || id === "1") {
-      const unsubscribe = listenToScreenIndex(
-        parseInt(id),
-        async (newIndex) => {
+      const unsubscribe = listenToIndex(async (newIndex) => {
+        if (newIndex % 2 !== parseInt(id)) {
+          return;
+        } else {
           setIndex(newIndex);
           try {
             console.log("Fetching video URL for index:", newIndex);
-            //   const url = await getVideoUrl(`${newIndex}.mov`);
-            const url = await getVideoUrl(`videos/IMG_3083.mov`);
-            console.log("Got url: ", url);
-            setVideoUrl(url);
+            const videoExists = await checkVideoExists(`${newIndex}.mov`);
+            if (videoExists) {
+              const url = await getVideoUrl(`${newIndex}.mov`);
+              console.log("Got url: ", url);
+              setVideoUrl(url);
+            } else {
+              console.log(`Video ${newIndex}.mov does not exist`);
+              setVideoUrl(null);
+            }
           } catch (error) {
             console.error("Error fetching video URL:", error);
           }
         }
-      );
+      });
 
       return () => {
         unsubscribe();
@@ -56,7 +63,7 @@ export default function PlayerPage() {
         color: "black",
       }}
     >
-      {index !== null && <div>Index: {index}</div>}
+      {index !== null && <div className="text-white">Index: {index}</div>}
       {videoUrl && (
         <video src={videoUrl} controls autoPlay style={{ minHeight: "100%" }}>
           Your browser does not support the video tag.

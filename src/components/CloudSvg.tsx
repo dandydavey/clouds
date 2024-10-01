@@ -1,5 +1,5 @@
 import React from "react";
-import { updateScreenIndex } from "../lib/firebase";
+import { updateIndex } from "../lib/firebase";
 
 interface CloudSvgProps {
   clickedIndices: boolean[];
@@ -67,7 +67,7 @@ export default function ClickAreas({
     });
 
     // Send click event to db.
-    updateScreenIndex(index)
+    updateIndex(index)
       .then(() => console.log("Click event sent to db successfully"))
       .catch((error) => console.error("Error sending click to db:", error));
   };
