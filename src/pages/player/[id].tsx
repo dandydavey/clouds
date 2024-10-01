@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   initializeFirebase,
   listenToIndex,
@@ -12,6 +12,21 @@ export default function PlayerPage() {
   const { id } = router.query;
   const [index, setIndex] = useState<number | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
+  const pageRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!pageRef.current) return;
+
+    if (!document.fullscreenElement) {
+      pageRef.current.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   useEffect(() => {
     initializeFirebase();
@@ -46,12 +61,25 @@ export default function PlayerPage() {
     }
   }, [id]);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
   if (!id || (id !== "0" && id !== "1")) {
     return <div>Invalid player ID. Must be 0 or 1.</div>;
   }
 
   return (
     <div
+      ref={pageRef}
       style={{
         width: "100vw",
         height: "100vh",
@@ -70,6 +98,12 @@ export default function PlayerPage() {
           Your browser does not support the video tag.
         </video>
       )}
+      <button
+        onClick={toggleFullscreen}
+        className="mt-4 px-4 py-2 bg-black text-white rounded hover:bg-slate-900"
+      >
+        {isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+      </button>
     </div>
   );
 }
