@@ -1,57 +1,97 @@
-import { useState } from "react";
+import { GetServerSideProps } from "next";
 import Image from "next/image";
-import Overlay from "@/components/Overlay";
+import ClickOutlines from "@/components/CloudSvg";
+import { EffectAreas } from "@/components/CloudSvg";
+import { useState } from "react";
+import fs from "fs";
+import path from "path";
+import { parseString } from "xml2js";
+import { promisify } from "util";
 
-function Box({ audioFile }: { audioFile: string }) {
-  const [isPlaying, setIsPlaying] = useState(false);
+const parseStringPromise = promisify(parseString);
 
-  const playAudio = () => {
-    if (!isPlaying) {
-      const audio = new Audio(audioFile);
-      setIsPlaying(true);
-      audio.play();
-      audio.onended = () => {
-        setIsPlaying(false);
+interface CloudsProps {
+  paths: string[];
+}
+
+interface SvgResult {
+  svg?: {
+    path?: Array<{
+      $?: {
+        d?: string;
       };
-    }
+    }>;
   };
-
-  return (
-    <>
-      <div
-        className={`w-10 h-10 border-2 bg-pink-600 ${
-          isPlaying ? "cursor-not-allowed" : "cursor-pointer"
-        }`}
-        onClick={playAudio}
-      ></div>
-    </>
-  );
 }
 
-export default function Home() {
+export default function Clouds({ paths }: CloudsProps) {
+  const [clickedIndices, setClickedIndices] = useState<boolean[]>([]);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   return (
-    <>
-      <main
-        className={`h-full relative`}
-        style={{
-          backgroundImage: 'url("/sky_above_clouds_iv.png")',
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <Overlay></Overlay>
-        <div
-          className="absolute"
-          style={{
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <Box audioFile="/Test.m4a" />
-          <Box audioFile="/Test2.m4a" />
+    <div
+      style={{
+        margin: 0,
+        padding: 0,
+        position: "relative",
+        width: "2560px",
+        height: "1423px",
+      }}
+    >
+      {/* Flexbox under image */}
+      <Image
+        src="/sky_above_clouds_iv.png"
+        alt="Sky Above The Clouds IV by Georgia O'Keefe"
+        width={2560}
+        height={1423}
+        layout="intrinsic"
+        className={`absolute`}
+        style={{ top: 0, left: 0 }}
+      />
+      <EffectAreas
+        clickedIndices={clickedIndices}
+        setClickedIndices={setClickedIndices}
+        hoveredIndex={hoveredIndex}
+        setHoveredIndex={setHoveredIndex}
+        paths={paths}
+      />
+      <div className="absolute flex flex-col items-center justify-center top-0 left-0 w-screen h-full max-h-screen bg-transparent">
+        <div className="text-center w-20 h-10 bg-slate-300 opacity-20 flex flex-col items-center justify-center">
+          Hello World
         </div>
-      </main>
-    </>
+      </div>
+      <ClickOutlines
+        clickedIndices={clickedIndices}
+        setClickedIndices={setClickedIndices}
+        hoveredIndex={hoveredIndex}
+        setHoveredIndex={setHoveredIndex}
+        paths={paths}
+      />
+    </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps<CloudsProps> = async () => {
+  const svgFilePath = path.join(process.cwd(), "public", "clouds.svg");
+  const svgContent = fs.readFileSync(svgFilePath, "utf-8");
+
+  const result = await parseStringPromise(svgContent);
+  const paths: string[] = [];
+
+  const svgResult = result as SvgResult;
+
+  if (svgResult.svg && Array.isArray(svgResult.svg.path)) {
+    svgResult.svg.path.forEach((pathElement) => {
+      if (pathElement.$ && pathElement.$.d) {
+        paths.push(pathElement.$.d);
+      }
+    });
+  }
+  console.log("There are", paths.length, "paths");
+
+  return {
+    props: {
+      paths,
+    },
+  };
+};
