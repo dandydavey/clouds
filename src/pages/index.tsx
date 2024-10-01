@@ -55,11 +55,6 @@ export default function Clouds({ paths }: CloudsProps) {
         setHoveredIndex={setHoveredIndex}
         paths={paths}
       />
-      <div className="absolute flex flex-col items-center justify-center top-0 left-0 w-screen h-full max-h-screen bg-transparent">
-        <div className="text-center w-20 h-10 bg-slate-300 opacity-20 flex flex-col items-center justify-center">
-          Hello World
-        </div>
-      </div>
       <ClickOutlines
         clickedIndices={clickedIndices}
         setClickedIndices={setClickedIndices}
