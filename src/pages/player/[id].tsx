@@ -121,7 +121,6 @@ export default function PlayerPage() {
           ref={videoRef}
           src={videoUrl}
           autoPlay
-          muted
           playsInline
           style={{ minHeight: "100%" }}
         >
