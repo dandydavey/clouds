@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { updateIndex } from "../lib/firebase";
-import { useCallback } from "react";
 
 interface CloudSvgProps {
   clickedIndices: boolean[];
@@ -59,6 +58,8 @@ export default function ClickAreas({
   paths,
   setHoveredIndex,
 }: CloudSvgProps) {
+  const [showTooltips, setShowTooltips] = useState(true);
+
   const handleClick = useCallback(
     (index: number) => {
       console.log("clicked ", index);
@@ -93,6 +94,20 @@ export default function ClickAreas({
     setHoveredIndex(index);
   };
 
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "t" || event.key === "T") {
+        setShowTooltips((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []);
+
   return (
     <svg
       className={`absolute`}
@@ -107,16 +122,18 @@ export default function ClickAreas({
         ))}
       </defs>
       {paths.map((_, index) => (
-        <rect
-          key={`rect-${index}`}
-          width="100%"
-          height="100%"
-          opacity={0}
-          onClick={() => handleClick(index)}
-          onMouseEnter={() => handleHover(index)}
-          onMouseLeave={() => handleHover(null)}
-          clipPath={`url(#clip-path-${index})`}
-        />
+        <g key={`group-${index}`}>
+          <rect
+            width="100%"
+            height="100%"
+            opacity={0}
+            onClick={() => handleClick(index)}
+            onMouseEnter={() => handleHover(index)}
+            onMouseLeave={() => handleHover(null)}
+            clipPath={`url(#clip-path-${index})`}
+          />
+          {showTooltips && <title>Cloud {index}</title>}
+        </g>
       ))}
     </svg>
   );

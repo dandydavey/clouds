@@ -15,7 +15,6 @@ export default function PlayerPage() {
   const [videoEnded, setVideoEnded] = useState(false);
 
   const pageRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const toggleFullscreen = () => {
@@ -31,10 +30,24 @@ export default function PlayerPage() {
   };
 
   useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "f" || event.key === "F") {
+        toggleFullscreen();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyPress);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []);
+
+  useEffect(() => {
     setVideoEnded(false);
     if (videoRef.current) {
       const videoElement = videoRef.current;
-      videoElement.volume = 0.2;
+      videoElement.volume = 0.05;
 
       const handleVideoEnded = () => {
         setVideoEnded(true);
@@ -86,18 +99,6 @@ export default function PlayerPage() {
     }
   }, [id]);
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
-  }, []);
-
   if (!id || (id !== "0" && id !== "1")) {
     return <div>Invalid player ID. Must be 0 or 1.</div>;
   }
@@ -129,13 +130,6 @@ export default function PlayerPage() {
           Your browser does not support the video tag.
         </video>
       )}
-      {videoEnded && <div className="text-white">Video has ended</div>}
-      <button
-        onClick={toggleFullscreen}
-        className="mt-4 px-4 py-2 bg-black text-white rounded hover:bg-slate-900"
-      >
-        {isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-      </button>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { GetServerSideProps } from "next";
 import Image from "next/image";
 import ClickOutlines from "@/components/CloudSvg";
 import { EffectAreas } from "@/components/CloudSvg";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import fs from "fs";
 import path from "path";
 import { parseString } from "xml2js";
@@ -27,9 +27,37 @@ interface SvgResult {
 export default function Clouds({ paths }: CloudsProps) {
   const [clickedIndices, setClickedIndices] = useState<boolean[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const pageRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = () => {
+    if (!pageRef.current) return;
+
+    if (!document.fullscreenElement) {
+      pageRef.current.requestFullscreen().catch((err) => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.key === "f" || event.key === "F") {
+        toggleFullscreen();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyPress);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyPress);
+    };
+  }, []);
 
   return (
     <div
+      ref={pageRef}
       style={{
         margin: 0,
         padding: 0,
