@@ -8,8 +8,7 @@ export default function QRUploadPage() {
   useEffect(() => {
     initializeFirebase();
 
-    const unsubscribe = listenToIndex((newIndex) => {
-      console.log("Index is set: ", newIndex);
+    const unsubscribe = listenToIndex((timestamp, newIndex) => {
       setIndex(newIndex);
     });
 

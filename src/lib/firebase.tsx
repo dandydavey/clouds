@@ -47,10 +47,11 @@ export function updateIndex(index: number) {
     );
   }
   const cloudRef = ref(db, `clouds/clicked`);
-  return set(cloudRef, { index: index });
+  const timestamp = Date.now();
+  return set(cloudRef, { timestamp, index });
 }
 
-export function listenToIndex(callback: (index: number) => void) {
+export function listenToIndex(callback: (timestamp: number, index: number) => void) {
   if (!db) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
@@ -59,8 +60,8 @@ export function listenToIndex(callback: (index: number) => void) {
   const cloudRef = ref(db, `clouds/clicked`);
   onValue(cloudRef, (snapshot) => {
     const data = snapshot.val();
-    if (data && typeof data.index === "number") {
-      callback(data.index);
+    if (data && typeof data.timestamp === "number" && typeof data.index === "number") {
+      callback(data.timestamp, data.index);
     }
   });
 

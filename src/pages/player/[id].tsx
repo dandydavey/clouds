@@ -71,14 +71,14 @@ export default function PlayerPage() {
     initializeFirebase();
 
     if (id === "0" || id === "1") {
-      const unsubscribe = listenToIndex(async (newIndex) => {
+      const unsubscribe = listenToIndex(async (timestamp, newIndex) => {
         // if (newIndex % 2 !== parseInt(id)) {
         if (false) {
           return;
         } else {
           setIndex(newIndex);
           try {
-            console.log("Fetching video URL for index:", newIndex);
+            console.log("Fetching video URL for index:", newIndex, "at timestamp:", timestamp);
             const videoExists = await checkVideoExists(newIndex);
             if (videoExists) {
               const url = await getVideoUrl(newIndex);
