@@ -16,21 +16,34 @@ export default function Upload() {
     const file = event.target.files?.[0];
     if (!file || !index) return;
 
-    setUploading(true);
-    try {
-      await uploadVideo(
-        parseInt(index as string),
-        file,
-        (progress) => setProgress(progress),
-        () => {
-          setUploading(false);
-        }
-      );
-    } catch (error) {
-      console.error("Error uploading video:", error);
-      setUploading(false);
-      alert("Upload failed. Please try again.");
-    }
+    // Check video duration
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.src = URL.createObjectURL(file);
+
+    video.onloadedmetadata = async () => {
+      URL.revokeObjectURL(video.src);
+      if (video.duration > 30) {
+        alert("Video must be 30 seconds or less.");
+        return;
+      }
+
+      setUploading(true);
+      try {
+        await uploadVideo(
+          parseInt(index as string),
+          file,
+          (progress) => setProgress(progress),
+          () => {
+            setUploading(false);
+          }
+        );
+      } catch (error) {
+        console.error("Error uploading video:", error);
+        setUploading(false);
+        alert("Upload failed. Please try again.");
+      }
+    };
   };
 
   return (

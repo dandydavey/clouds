@@ -31,8 +31,10 @@ export default function PlayerPage() {
   };
 
   useEffect(() => {
+    setVideoEnded(false);
     if (videoRef.current) {
       const videoElement = videoRef.current;
+      videoElement.volume = 0.2;
 
       const handleVideoEnded = () => {
         setVideoEnded(true);
