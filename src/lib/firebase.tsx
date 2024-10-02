@@ -102,7 +102,7 @@ export async function checkVideoExists(index: number): Promise<boolean> {
     console.log(result);
     return result.items.length > 0;
   } catch (error) {
-    if (error.code === "storage/object-not-found") {
+    if (error instanceof Error && 'code' in error && error.code === "storage/object-not-found") {
       return false;
     }
     throw error;
