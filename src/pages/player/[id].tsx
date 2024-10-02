@@ -12,9 +12,11 @@ export default function PlayerPage() {
   const { id } = router.query;
   const [index, setIndex] = useState<number | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoEnded, setVideoEnded] = useState(false);
 
   const pageRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const toggleFullscreen = () => {
     if (!pageRef.current) return;
@@ -27,6 +29,28 @@ export default function PlayerPage() {
       document.exitFullscreen();
     }
   };
+
+  useEffect(() => {
+    if (videoRef.current) {
+      const videoElement = videoRef.current;
+
+      const handleVideoEnded = () => {
+        setVideoEnded(true);
+        setVideoUrl(null);
+      };
+
+      videoElement.addEventListener("ended", handleVideoEnded);
+
+      videoElement.play().catch((error) => {
+        console.log("Autoplay was prevented:", error);
+        // You might want to show a play button or inform the user here
+      });
+
+      return () => {
+        videoElement.removeEventListener("ended", handleVideoEnded);
+      };
+    }
+  }, [id, videoUrl]);
 
   useEffect(() => {
     initializeFirebase();
@@ -92,11 +116,19 @@ export default function PlayerPage() {
       }}
     >
       {index !== null && <div className="text-white">Index: {index}</div>}
-      {videoUrl && (
-        <video src={videoUrl} controls autoPlay style={{ minHeight: "100%" }}>
+      {videoUrl && !videoEnded && (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          autoPlay
+          muted
+          playsInline
+          style={{ minHeight: "100%" }}
+        >
           Your browser does not support the video tag.
         </video>
       )}
+      {videoEnded && <div className="text-white">Video has ended</div>}
       <button
         onClick={toggleFullscreen}
         className="mt-4 px-4 py-2 bg-black text-white rounded hover:bg-slate-900"
