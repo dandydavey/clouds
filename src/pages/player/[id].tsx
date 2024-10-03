@@ -47,7 +47,7 @@ export default function PlayerPage() {
     setVideoEnded(false);
     if (videoRef.current) {
       const videoElement = videoRef.current;
-      videoElement.volume = 0.05;
+      // videoElement.volume = 0.05;
 
       const handleVideoEnded = () => {
         setVideoEnded(true);
@@ -78,7 +78,12 @@ export default function PlayerPage() {
         } else {
           setIndex(newIndex);
           try {
-            console.log("Fetching video URL for index:", newIndex, "at timestamp:", timestamp);
+            console.log(
+              "Fetching video URL for index:",
+              newIndex,
+              "at timestamp:",
+              timestamp
+            );
             const videoExists = await checkVideoExists(newIndex);
             if (videoExists) {
               const url = await getVideoUrl(newIndex);
@@ -124,6 +129,7 @@ export default function PlayerPage() {
           ref={videoRef}
           src={videoUrl}
           autoPlay
+          muted
           playsInline
           style={{ minHeight: "100%" }}
         >
