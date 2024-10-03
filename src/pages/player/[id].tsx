@@ -10,7 +10,6 @@ import {
 export default function PlayerPage() {
   const router = useRouter();
   const { id } = router.query;
-  const [index, setIndex] = useState<number | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoEnded, setVideoEnded] = useState(false);
 
@@ -76,7 +75,6 @@ export default function PlayerPage() {
         if (false) {
           return;
         } else {
-          setIndex(newIndex);
           try {
             console.log(
               "Fetching video URL for index:",
@@ -123,13 +121,13 @@ export default function PlayerPage() {
         color: "black",
       }}
     >
-      {index !== null && <div className="text-white">Index: {index}</div>}
+      {/* {index !== null && <div className="text-white">Index: {index}</div>} */}
       {videoUrl && !videoEnded && (
         <video
           ref={videoRef}
           src={videoUrl}
           autoPlay
-          muted
+          muted={true}
           playsInline
           style={{ minHeight: "100%" }}
         >
