@@ -4,6 +4,7 @@ import {
   Database,
   ref,
   set,
+  get,
   onValue,
   off,
 } from "firebase/database";
@@ -13,7 +14,6 @@ import {
   getDownloadURL,
   uploadBytesResumable,
   UploadTask,
-  listAll,
   deleteObject,
 } from "firebase/storage";
 
@@ -51,7 +51,9 @@ export function updateIndex(index: number) {
   return set(cloudRef, { timestamp, index });
 }
 
-export function listenToIndex(callback: (timestamp: number, index: number) => void) {
+export function listenToIndex(
+  callback: (timestamp: number, index: number) => void
+) {
   if (!db) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
@@ -60,7 +62,11 @@ export function listenToIndex(callback: (timestamp: number, index: number) => vo
   const cloudRef = ref(db, `clouds/clicked`);
   onValue(cloudRef, (snapshot) => {
     const data = snapshot.val();
-    if (data && typeof data.timestamp === "number" && typeof data.index === "number") {
+    if (
+      data &&
+      typeof data.timestamp === "number" &&
+      typeof data.index === "number"
+    ) {
       callback(data.timestamp, data.index);
     }
   });
@@ -70,19 +76,23 @@ export function listenToIndex(callback: (timestamp: number, index: number) => vo
 }
 
 export async function getVideoUrl(index: number): Promise<string> {
-  if (!storage) {
+  if (!storage || !db) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
     );
   }
 
-  const videoRef = storageRef(storage, `videos/${index}`);
+  const cloudToVideoRef = ref(db, `cloudToVideo/${index}`);
+  const snapshot = await get(cloudToVideoRef);
+  const filename = snapshot.val();
+
+  if (!filename) {
+    throw new Error(`No video found for index ${index}`);
+  }
+
+  const videoRef = storageRef(storage, `videos/${filename}`);
   try {
-    const files = await listAll(videoRef);
-    if (files.items.length === 0) {
-      throw new Error(`No video found for index ${index}`);
-    }
-    const url = await getDownloadURL(files.items[0]);
+    const url = await getDownloadURL(videoRef);
     return url;
   } catch (error) {
     console.error("Error getting download URL:", error);
@@ -91,23 +101,14 @@ export async function getVideoUrl(index: number): Promise<string> {
 }
 
 export async function checkVideoExists(index: number): Promise<boolean> {
-  if (!storage) {
+  if (!db) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
     );
   }
-  const folderRef = storageRef(storage, `videos/${index}`);
-
-  try {
-    const result = await listAll(folderRef);
-    console.log(result);
-    return result.items.length > 0;
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === "storage/object-not-found") {
-      return false;
-    }
-    throw error;
-  }
+  const cloudToVideoRef = ref(db, `cloudToVideo/${index}`);
+  const snapshot = await get(cloudToVideoRef);
+  return snapshot.exists();
 }
 
 export async function uploadVideo(
@@ -116,29 +117,27 @@ export async function uploadVideo(
   onProgress: (progress: number) => void,
   onComplete: () => void
 ): Promise<void> {
-  if (!storage) {
+  if (!storage || !db) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
     );
   }
 
-  const folderRef = storageRef(storage, `videos/${index}`);
-
-  // Start deletion of existing files without awaiting
-  const deletionTask = listAll(folderRef)
-    .then((existingFiles) => {
-      existingFiles.items.forEach((fileRef) => {
-        deleteObject(fileRef).catch((error) => {
-          console.error("Error deleting file:", fileRef.fullPath, error);
-        });
-      });
-    })
-    .catch((error) => {
-      console.error("Error listing files for deletion:", error);
+  // Delete existing video if any
+  const cloudToVideoRef = ref(db, `cloudToVideo/${index}`);
+  const snapshot = await get(cloudToVideoRef);
+  let deletionTask: Promise<void> = Promise.resolve();
+  if (snapshot.exists()) {
+    const oldFilename = snapshot.val();
+    const oldFileRef = storageRef(storage, `videos/${oldFilename}`);
+    deletionTask = deleteObject(oldFileRef).catch((error) => {
+      console.error("Error deleting old file:", error);
     });
+  }
 
   // Create a reference for the new file
-  const newFileRef = storageRef(storage, `videos/${index}/${file.name}`);
+  const newFilename = `${Date.now()}_${file.name}`;
+  const newFileRef = storageRef(storage, `videos/${newFilename}`);
 
   // Create an upload task
   const uploadTask: UploadTask = uploadBytesResumable(newFileRef, file);
@@ -155,13 +154,15 @@ export async function uploadVideo(
       console.error("Error uploading file:", error);
       onComplete(); // Call onComplete even if there's an error
     },
-    () => {
+    async () => {
       console.log("Upload completed successfully");
+      // Update the cloudToVideo mapping
+      await set(cloudToVideoRef, newFilename);
       onComplete();
     }
   );
 
-  // Wait for the upload to complete
+  // Wait for the upload and deletion to complete
   await Promise.all([uploadTask, deletionTask]);
 }
 
