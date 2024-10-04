@@ -5,6 +5,7 @@ import {
   listenToIndex,
   getVideoUrl,
   checkVideoExists,
+  getRandomVideoUrl,
 } from "../../lib/firebase";
 
 export default function PlayerPage() {
@@ -87,8 +88,11 @@ export default function PlayerPage() {
               const url = await getVideoUrl(newIndex);
               setVideoUrl(url);
             } else {
-              console.log(`No videos for index ${newIndex}`);
-              setVideoUrl(null);
+              const randomUrl = await getRandomVideoUrl();
+              console.log(
+                `No videos for index ${newIndex}, fetched random video: ${randomUrl}`
+              );
+              setVideoUrl(randomUrl);
             }
           } catch (error) {
             console.error("Error fetching video URL:", error);

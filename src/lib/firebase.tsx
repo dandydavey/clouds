@@ -15,6 +15,7 @@ import {
   uploadBytesResumable,
   UploadTask,
   deleteObject,
+  listAll,
 } from "firebase/storage";
 
 // Your Firebase configuration object
@@ -165,5 +166,27 @@ export async function uploadVideo(
   // Wait for the upload and deletion to complete
   await Promise.all([uploadTask, deletionTask]);
 }
+
+export async function getRandomVideoUrl(): Promise<string> {
+  const storage = getStorage();
+  const videosRef = storageRef(storage, "videos");
+
+  try {
+    const result = await listAll(videosRef);
+    if (result.items.length === 0) {
+      throw new Error("No videos available");
+    }
+
+    const randomIndex = Math.floor(Math.random() * result.items.length);
+    const randomVideoRef = result.items[randomIndex];
+
+    return await getDownloadURL(randomVideoRef);
+  } catch (error) {
+    console.error("Error getting random video URL:", error);
+    throw error;
+  }
+}
+
+// ... rest of the file
 
 export { db, storage };
