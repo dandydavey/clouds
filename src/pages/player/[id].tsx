@@ -4,6 +4,10 @@ import {
   initializeFirebase,
   listenToPlayer,
   getVideoUrl,
+  listenToIdlePlayers,
+  updateIdlePlayers,
+  listenToActivePlayers,
+  updateActivePlayers,
 } from "../../lib/firebase";
 
 export default function PlayerPage() {
@@ -14,6 +18,8 @@ export default function PlayerPage() {
 
   const pageRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const idlePlayersRef = useRef<number[]>([]);
+  const activePlayersRef = useRef<number[]>([]);
 
   const toggleFullscreen = () => {
     if (!pageRef.current) return;
@@ -25,6 +31,16 @@ export default function PlayerPage() {
     } else {
       document.exitFullscreen();
     }
+  };
+
+  const updatePlayerLists = (
+    newIdlePlayers: number[],
+    newActivePlayers: number[]
+  ) => {
+    idlePlayersRef.current = newIdlePlayers;
+    activePlayersRef.current = newActivePlayers;
+    updateIdlePlayers(newIdlePlayers).catch(console.error);
+    updateActivePlayers(newActivePlayers).catch(console.error);
   };
 
   useEffect(() => {
@@ -44,6 +60,14 @@ export default function PlayerPage() {
   useEffect(() => {
     initializeFirebase();
 
+    const unsubscribeIdlePlayers = listenToIdlePlayers((players) => {
+      idlePlayersRef.current = players;
+    });
+
+    const unsubscribeActivePlayers = listenToActivePlayers((players) => {
+      activePlayersRef.current = players;
+    });
+
     if (typeof id === "string") {
       const playerIndex = parseInt(id);
       if (isNaN(playerIndex)) {
@@ -51,22 +75,63 @@ export default function PlayerPage() {
         return;
       }
 
-      const unsubscribe = listenToPlayer(playerIndex, async (filename) => {
-        if (filename) {
-          try {
-            const url = await getVideoUrl(filename);
-            setVideoUrl(url);
-            setVideoEnded(false);
-          } catch (error) {
-            console.error("Error fetching video URL:", error);
+      const unsubscribePlayer = listenToPlayer(
+        playerIndex,
+        async (filename) => {
+          if (filename) {
+            try {
+              const url = await getVideoUrl(filename);
+              setVideoUrl(url);
+              setVideoEnded(false);
+
+              // Remove from idle, add to active
+              const newIdlePlayers = idlePlayersRef.current.filter(
+                (p) => p !== playerIndex
+              );
+              const newActivePlayers = [
+                ...activePlayersRef.current,
+                playerIndex,
+              ];
+              updatePlayerLists(newIdlePlayers, newActivePlayers);
+            } catch (error) {
+              console.error("Error fetching video URL:", error);
+            }
+          } else {
+            setVideoUrl(null);
+
+            // Remove from active, add to idle
+            const newActivePlayers = activePlayersRef.current.filter(
+              (p) => p !== playerIndex
+            );
+            const newIdlePlayers = [...idlePlayersRef.current, playerIndex];
+            updatePlayerLists(newIdlePlayers, newActivePlayers);
           }
-        } else {
-          setVideoUrl(null);
         }
-      });
+      );
+
+      const handleVideoEnded = () => {
+        setVideoEnded(true);
+
+        // Remove from active, add to idle
+        const newActivePlayers = activePlayersRef.current.filter(
+          (p) => p !== playerIndex
+        );
+        const newIdlePlayers = [...idlePlayersRef.current, playerIndex];
+        updatePlayerLists(newIdlePlayers, newActivePlayers);
+      };
+
+      const video = videoRef.current;
+      if (video) {
+        video.addEventListener("ended", handleVideoEnded);
+      }
 
       return () => {
-        unsubscribe();
+        unsubscribePlayer();
+        unsubscribeIdlePlayers();
+        unsubscribeActivePlayers();
+        if (video) {
+          video.removeEventListener("ended", handleVideoEnded);
+        }
       };
     }
   }, [id]);
@@ -78,6 +143,18 @@ export default function PlayerPage() {
 
       const handleVideoEnded = () => {
         setVideoEnded(true);
+
+        if (typeof id === "string") {
+          const playerIndex = parseInt(id);
+          if (!isNaN(playerIndex)) {
+            // Remove from active, add to idle
+            const newActivePlayers = activePlayersRef.current.filter(
+              (p) => p !== playerIndex
+            );
+            const newIdlePlayers = [...idlePlayersRef.current, playerIndex];
+            updatePlayerLists(newIdlePlayers, newActivePlayers);
+          }
+        }
       };
 
       videoElement.addEventListener("ended", handleVideoEnded);
@@ -91,7 +168,7 @@ export default function PlayerPage() {
         videoElement.removeEventListener("ended", handleVideoEnded);
       };
     }
-  }, [videoUrl]);
+  }, [videoUrl, id]);
 
   if (!id || (typeof id === "string" && !["0", "1", "2"].includes(id))) {
     return <div>Invalid player ID. Must be 0, 1, or 2.</div>;

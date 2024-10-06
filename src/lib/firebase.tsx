@@ -130,7 +130,7 @@ export async function uploadVideo(
   await uploadTask;
 }
 
-export async function getRandomVideoFilename(): Promise<string> {
+export async function getRandomVideo(): Promise<string> {
   if (!storage) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
@@ -147,6 +147,7 @@ export async function getRandomVideoFilename(): Promise<string> {
     const randomIndex = Math.floor(Math.random() * result.items.length);
     const randomVideoRef = result.items[randomIndex];
 
+    // Return just the filename
     return randomVideoRef.name;
   } catch (error) {
     console.error("Error getting random video filename:", error);
@@ -259,4 +260,82 @@ export function listenToPlayer(
 
   // Return a function to unsubscribe
   return () => off(playerRef, "value", handleSnapshot);
+}
+
+export function listenToIdlePlayers(
+  callback: (idlePlayers: number[]) => void
+) {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const idlePlayersRef = ref(db, "players/idle");
+
+  onValue(idlePlayersRef, (snapshot) => {
+    const data = snapshot.val();
+    if (Array.isArray(data)) {
+      callback(data);
+    } else {
+      callback([]);
+    }
+  });
+
+  // Return a function to unsubscribe
+  return () => off(idlePlayersRef);
+}
+
+export async function updateIdlePlayers(idlePlayers: number[]): Promise<void> {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const idlePlayersRef = ref(db, "players/idle");
+  try {
+    await set(idlePlayersRef, idlePlayers);
+    console.log("Idle players updated successfully");
+  } catch (error) {
+    console.error("Error updating idle players:", error);
+    throw error;
+  }
+}
+
+export function listenToActivePlayers(
+  callback: (activePlayers: number[]) => void
+) {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const activePlayersRef = ref(db, "players/active");
+
+  onValue(activePlayersRef, (snapshot) => {
+    const data = snapshot.val();
+    if (Array.isArray(data)) {
+      callback(data);
+    } else {
+      callback([]);
+    }
+  });
+
+  // Return a function to unsubscribe
+  return () => off(activePlayersRef);
+}
+
+export async function updateActivePlayers(activePlayers: number[]): Promise<void> {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const activePlayersRef = ref(db, "players/active");
+  try {
+    await set(activePlayersRef, activePlayers);
+    console.log("Active players updated successfully");
+  } catch (error) {
+    console.error("Error updating active players:", error);
+    throw error;
+  }
 }

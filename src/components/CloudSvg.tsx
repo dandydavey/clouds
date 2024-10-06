@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   updateIndex,
   sendToPlayer,
   listenToCloudToVideo,
-  getRandomVideoFilename,
+  getRandomVideo,
+  listenToIdlePlayers,
+  listenToActivePlayers,
+  updateIdlePlayers,
 } from "../lib/firebase";
 
 interface CloudSvgProps {
@@ -67,14 +70,30 @@ export default function ClickAreas({
 }: CloudSvgProps) {
   const [showTooltips, setShowTooltips] = useState(true);
   const [cloudToVideo, setCloudToVideo] = useState<Record<number, string>>({});
+  const idlePlayersRef = useRef<number[]>([]);
+  const activePlayersRef = useRef<number[]>([]);
 
   useEffect(() => {
-    const unsubscribe = listenToCloudToVideo((mapping) => {
+    updateIdlePlayers(Array.from({ length: numPlayers }, (_, i) => i));
+    const unsubscribeCloud = listenToCloudToVideo((mapping) => {
       setCloudToVideo(mapping);
     });
 
-    return () => unsubscribe();
-  }, []);
+    const unsubscribeIdle = listenToIdlePlayers((players) => {
+      idlePlayersRef.current = players;
+      console.log("idle players: ", idlePlayersRef.current);
+    });
+
+    const unsubscribeActive = listenToActivePlayers((players) => {
+      activePlayersRef.current = players;
+    });
+
+    return () => {
+      unsubscribeCloud();
+      unsubscribeIdle();
+      unsubscribeActive();
+    };
+  }, [numPlayers]);
 
   const handleClick = useCallback(
     async (index: number) => {
@@ -107,7 +126,7 @@ export default function ClickAreas({
       let filename = cloudToVideo[index];
       if (!filename) {
         try {
-          filename = await getRandomVideoFilename();
+          filename = await getRandomVideo();
         } catch (error) {
           console.error("Error getting random video filename:", error);
           return;
@@ -115,13 +134,27 @@ export default function ClickAreas({
       }
 
       if (filename) {
-        const randomPlayerIndex = Math.floor(Math.random() * numPlayers);
-        sendToPlayer(filename, randomPlayerIndex)
-          .then(() => console.log(`Sent to player ${randomPlayerIndex} successfully`))
-          .catch((error) => console.error("Error sending to player:", error));
+        let targetPlayer: number | undefined;
+
+        console.log("idle players with filename: ", idlePlayersRef.current);
+        if (idlePlayersRef.current.length > 0) {
+          console.log("has an idle player: ", idlePlayersRef.current[0]);
+          targetPlayer = idlePlayersRef.current[0];
+        } else if (activePlayersRef.current.length > 0) {
+          targetPlayer = activePlayersRef.current[0];
+        }
+        if (targetPlayer !== undefined) {
+          sendToPlayer(filename, targetPlayer)
+            .then(() =>
+              console.log(`Sent to player ${targetPlayer} successfully`)
+            )
+            .catch((error) => console.error("Error sending to player:", error));
+        } else {
+          console.warn("No available players to send the video to.");
+        }
       }
     },
-    [setClickedIndices, cloudToVideo, numPlayers]
+    [setClickedIndices, cloudToVideo]
   );
 
   const handleHover = (index: number | null) => {
