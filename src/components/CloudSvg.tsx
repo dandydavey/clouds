@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { updateIndex } from "../lib/firebase";
+import {
+  updateIndex,
+  sendToPlayer,
+  listenToCloudToVideo,
+  getRandomVideoFilename,
+} from "../lib/firebase";
 
 interface CloudSvgProps {
   clickedIndices: boolean[];
@@ -7,6 +12,7 @@ interface CloudSvgProps {
   hoveredIndex: number | null;
   setHoveredIndex: React.Dispatch<React.SetStateAction<number | null>>;
   paths: string[];
+  numPlayers: number;
 }
 
 export function EffectAreas({
@@ -57,11 +63,21 @@ export default function ClickAreas({
   setClickedIndices,
   paths,
   setHoveredIndex,
+  numPlayers,
 }: CloudSvgProps) {
   const [showTooltips, setShowTooltips] = useState(true);
+  const [cloudToVideo, setCloudToVideo] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    const unsubscribe = listenToCloudToVideo((mapping) => {
+      setCloudToVideo(mapping);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleClick = useCallback(
-    (index: number) => {
+    async (index: number) => {
       console.log("clicked ", index);
       setClickedIndices((prev) => {
         const newClickedPaths = [...prev];
@@ -86,8 +102,26 @@ export default function ClickAreas({
       updateIndex(index)
         .then(() => console.log("Click event sent to db successfully"))
         .catch((error) => console.error("Error sending click to db:", error));
+
+      // Send to player
+      let filename = cloudToVideo[index];
+      if (!filename) {
+        try {
+          filename = await getRandomVideoFilename();
+        } catch (error) {
+          console.error("Error getting random video filename:", error);
+          return;
+        }
+      }
+
+      if (filename) {
+        const randomPlayerIndex = Math.floor(Math.random() * numPlayers);
+        sendToPlayer(filename, randomPlayerIndex)
+          .then(() => console.log(`Sent to player ${randomPlayerIndex} successfully`))
+          .catch((error) => console.error("Error sending to player:", error));
+      }
     },
-    [setClickedIndices]
+    [setClickedIndices, cloudToVideo, numPlayers]
   );
 
   const handleHover = (index: number | null) => {

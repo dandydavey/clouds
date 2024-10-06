@@ -27,6 +27,7 @@ interface SvgResult {
 export default function Clouds({ paths }: CloudsProps) {
   const [clickedIndices, setClickedIndices] = useState<boolean[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [numPlayers, setNumPlayers] = useState<number>(1);
   const pageRef = useRef<HTMLDivElement>(null);
 
   const toggleFullscreen = () => {
@@ -45,6 +46,9 @@ export default function Clouds({ paths }: CloudsProps) {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === "f" || event.key === "F") {
         toggleFullscreen();
+      } else if (event.key === "1" || event.key === "2" || event.key === "3") {
+        console.log("Setting numPlayers to ", event.key);
+        setNumPlayers(parseInt(event.key));
       }
     };
 
@@ -82,6 +86,7 @@ export default function Clouds({ paths }: CloudsProps) {
         hoveredIndex={hoveredIndex}
         setHoveredIndex={setHoveredIndex}
         paths={paths}
+        numPlayers={numPlayers}
       />
       <ClickOutlines
         clickedIndices={clickedIndices}
@@ -89,6 +94,7 @@ export default function Clouds({ paths }: CloudsProps) {
         hoveredIndex={hoveredIndex}
         setHoveredIndex={setHoveredIndex}
         paths={paths}
+        numPlayers={numPlayers}
       />
     </div>
   );

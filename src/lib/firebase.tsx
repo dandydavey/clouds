@@ -5,6 +5,7 @@ import {
   ref,
   set,
   onValue,
+  DataSnapshot,
   off,
 } from "firebase/database";
 import {
@@ -129,8 +130,12 @@ export async function uploadVideo(
   await uploadTask;
 }
 
-export async function getRandomVideoUrl(): Promise<string> {
-  const storage = getStorage();
+export async function getRandomVideoFilename(): Promise<string> {
+  if (!storage) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
   const videosRef = storageRef(storage, "videos");
 
   try {
@@ -142,9 +147,9 @@ export async function getRandomVideoUrl(): Promise<string> {
     const randomIndex = Math.floor(Math.random() * result.items.length);
     const randomVideoRef = result.items[randomIndex];
 
-    return await getDownloadURL(randomVideoRef);
+    return randomVideoRef.name;
   } catch (error) {
-    console.error("Error getting random video URL:", error);
+    console.error("Error getting random video filename:", error);
     throw error;
   }
 }
@@ -201,7 +206,7 @@ export async function checkVideoExists(filename: string): Promise<boolean> {
     await getDownloadURL(videoRef);
     return true;
   } catch (error: unknown) {
-    if (error instanceof Error && 'code' in error) {
+    if (error instanceof Error && "code" in error) {
       if (error.code === "storage/object-not-found") {
         return false;
       }
@@ -209,4 +214,49 @@ export async function checkVideoExists(filename: string): Promise<boolean> {
     console.error("Error checking if video exists:", error);
     throw error;
   }
+}
+
+export async function sendToPlayer(
+  filename: string,
+  playerIndex: number
+): Promise<void> {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const playerRef = ref(db, `player/${playerIndex}`);
+  try {
+    await set(playerRef, { filename });
+    console.log(`Sent ${filename} to player ${playerIndex}`);
+  } catch (error) {
+    console.error(`Error sending ${filename} to player ${playerIndex}:`, error);
+    throw error;
+  }
+}
+
+export function listenToPlayer(
+  playerIndex: number,
+  callback: (filename: string | null) => void
+) {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const playerRef = ref(db, `player/${playerIndex}`);
+
+  const handleSnapshot = (snapshot: DataSnapshot) => {
+    const data = snapshot.val();
+    if (data && typeof data.filename === "string") {
+      callback(data.filename);
+    } else {
+      callback(null);
+    }
+  };
+
+  onValue(playerRef, handleSnapshot);
+
+  // Return a function to unsubscribe
+  return () => off(playerRef, "value", handleSnapshot);
 }

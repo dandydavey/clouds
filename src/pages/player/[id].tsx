@@ -2,10 +2,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState, useRef } from "react";
 import {
   initializeFirebase,
-  listenToIndex,
+  listenToPlayer,
   getVideoUrl,
-  listenToCloudToVideo,
-  getRandomVideoUrl,
 } from "../../lib/firebase";
 
 export default function PlayerPage() {
@@ -13,9 +11,6 @@ export default function PlayerPage() {
   const { id } = router.query;
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoEnded, setVideoEnded] = useState(false);
-  const [cloudToVideoMapping, setCloudToVideoMapping] = useState<
-    Record<number, string>
-  >({});
 
   const pageRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -49,24 +44,40 @@ export default function PlayerPage() {
   useEffect(() => {
     initializeFirebase();
 
-    const unsubscribeCloudToVideo = listenToCloudToVideo((mapping) => {
-      setCloudToVideoMapping(mapping);
-    });
+    if (typeof id === "string") {
+      const playerIndex = parseInt(id);
+      if (isNaN(playerIndex)) {
+        console.error("Invalid player ID");
+        return;
+      }
 
-    return () => {
-      unsubscribeCloudToVideo();
-    };
-  }, []);
+      const unsubscribe = listenToPlayer(playerIndex, async (filename) => {
+        if (filename) {
+          try {
+            const url = await getVideoUrl(filename);
+            setVideoUrl(url);
+            setVideoEnded(false);
+          } catch (error) {
+            console.error("Error fetching video URL:", error);
+          }
+        } else {
+          setVideoUrl(null);
+        }
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [id]);
 
   useEffect(() => {
     setVideoEnded(false);
-    if (videoRef.current) {
+    if (videoRef.current && videoUrl) {
       const videoElement = videoRef.current;
-      // videoElement.volume = 0.05;
 
       const handleVideoEnded = () => {
         setVideoEnded(true);
-        setVideoUrl(null);
       };
 
       videoElement.addEventListener("ended", handleVideoEnded);
@@ -80,47 +91,10 @@ export default function PlayerPage() {
         videoElement.removeEventListener("ended", handleVideoEnded);
       };
     }
-  }, [id, videoUrl]);
+  }, [videoUrl]);
 
-  useEffect(() => {
-    if (id === "0" || id === "1") {
-      const unsubscribe = listenToIndex(async (timestamp, newIndex) => {
-        try {
-          console.log(
-            "Fetching video URL for index:",
-            newIndex,
-            "at timestamp:",
-            timestamp
-          );
-          const filename = cloudToVideoMapping[newIndex];
-          if (filename) {
-            const url = await getVideoUrl(filename);
-            setVideoUrl(url);
-          } else {
-            const randomUrl = await getRandomVideoUrl();
-            console.log(
-              `No videos for index ${newIndex}, fetched random video: ${randomUrl}`
-            );
-            setVideoUrl(randomUrl);
-          }
-        } catch (error) {
-          console.error("Error fetching video URL:", error);
-          const randomUrl = await getRandomVideoUrl();
-          console.log(
-            `No videos for index ${newIndex}, fetched random video: ${randomUrl}`
-          );
-          setVideoUrl(randomUrl);
-        }
-      });
-
-      return () => {
-        unsubscribe();
-      };
-    }
-  }, [id, cloudToVideoMapping]);
-
-  if (!id || (id !== "0" && id !== "1")) {
-    return <div>Invalid player ID. Must be 0 or 1.</div>;
+  if (!id || (typeof id === "string" && !["0", "1", "2"].includes(id))) {
+    return <div>Invalid player ID. Must be 0, 1, or 2.</div>;
   }
 
   return (
@@ -138,7 +112,6 @@ export default function PlayerPage() {
         color: "black",
       }}
     >
-      {/* {index !== null && <div className="text-white">Index: {index}</div>} */}
       {videoUrl && !videoEnded && (
         <video
           ref={videoRef}
