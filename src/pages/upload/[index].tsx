@@ -43,8 +43,8 @@ export default function Upload() {
 
     video.onloadedmetadata = async () => {
       URL.revokeObjectURL(video.src);
-      if (video.duration > 30) {
-        alert("Video must be 30 seconds or less.");
+      if (video.duration > 60) {
+        alert("Video must be 60 seconds or less.");
         return;
       }
 

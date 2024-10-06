@@ -23,9 +23,7 @@ export default function QRUploadPage() {
   return (
     <div className="w-screen h-screen bg-black flex flex-col justify-center items-center text-white">
       <h1 className="font-georgia text-2xl mb-8 text-center">
-        What does this remind you of?
-        <br />
-        Upload from your camera reel
+        Leave a memory for the next viewer to discover ❤ ️
       </h1>
       {index !== null && (
         <QRCodeSVG
@@ -37,7 +35,7 @@ export default function QRUploadPage() {
           className="mb-8"
         />
       )}
-      <h1 className="font-georgia text-2xl mb-8 text-center"> {uploadUrl}</h1>
+      <h1 className="font-georgia text-2xl mb-8 text-center text-black"> {uploadUrl}</h1>
     </div>
   );
 }
