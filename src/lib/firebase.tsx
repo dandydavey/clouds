@@ -4,7 +4,6 @@ import {
   Database,
   ref,
   set,
-  get,
   onValue,
   off,
 } from "firebase/database";
@@ -14,7 +13,6 @@ import {
   getDownloadURL,
   uploadBytesResumable,
   UploadTask,
-  deleteObject,
   listAll,
 } from "firebase/storage";
 
@@ -76,19 +74,11 @@ export function listenToIndex(
   return () => off(cloudRef);
 }
 
-export async function getVideoUrl(index: number): Promise<string> {
-  if (!storage || !db) {
+export async function getVideoUrl(filename: string): Promise<string> {
+  if (!storage) {
     throw new Error(
       "Firebase has not been initialized. Call initializeFirebase() first."
     );
-  }
-
-  const cloudToVideoRef = ref(db, `cloudToVideo/${index}`);
-  const snapshot = await get(cloudToVideoRef);
-  const filename = snapshot.val();
-
-  if (!filename) {
-    throw new Error(`No video found for index ${index}`);
   }
 
   const videoRef = storageRef(storage, `videos/${filename}`);
@@ -101,19 +91,7 @@ export async function getVideoUrl(index: number): Promise<string> {
   }
 }
 
-export async function checkVideoExists(index: number): Promise<boolean> {
-  if (!db) {
-    throw new Error(
-      "Firebase has not been initialized. Call initializeFirebase() first."
-    );
-  }
-  const cloudToVideoRef = ref(db, `cloudToVideo/${index}`);
-  const snapshot = await get(cloudToVideoRef);
-  return snapshot.exists();
-}
-
 export async function uploadVideo(
-  index: number | null,
   file: File,
   onProgress: (progress: number) => void,
   onComplete: () => void
@@ -124,21 +102,7 @@ export async function uploadVideo(
     );
   }
 
-  // Delete existing video if any
-  const cloudToVideoRef = ref(db, `cloudToVideo/${index}`);
-  const snapshot = await get(cloudToVideoRef);
-  let deletionTask: Promise<void> = Promise.resolve();
-  if (snapshot.exists()) {
-    const oldFilename = snapshot.val();
-    const oldFileRef = storageRef(storage, `videos/${oldFilename}`);
-    deletionTask = deleteObject(oldFileRef).catch((error) => {
-      console.error("Error deleting old file:", error);
-    });
-  }
-
-  // Create a reference for the new file
-  const newFilename = `${Date.now()}_${file.name}`;
-  const newFileRef = storageRef(storage, `videos/${newFilename}`);
+  const newFileRef = storageRef(storage, `videos/${file.name}`);
 
   // Create an upload task
   const uploadTask: UploadTask = uploadBytesResumable(newFileRef, file);
@@ -157,14 +121,12 @@ export async function uploadVideo(
     },
     async () => {
       console.log("Upload completed successfully");
-      // Update the cloudToVideo mapping
-      await set(cloudToVideoRef, newFilename);
       onComplete();
     }
   );
 
-  // Wait for the upload and deletion to complete
-  await Promise.all([uploadTask, deletionTask]);
+  // Wait for the upload to complete
+  await uploadTask;
 }
 
 export async function getRandomVideoUrl(): Promise<string> {
@@ -187,6 +149,64 @@ export async function getRandomVideoUrl(): Promise<string> {
   }
 }
 
-// ... rest of the file
+export async function updateCloudToVideoMapping(
+  mapping: Record<number, string>
+): Promise<void> {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const cloudToVideoRef = ref(db, "indexToVideo");
+  try {
+    await set(cloudToVideoRef, mapping);
+    console.log("Cloud to video mapping updated successfully");
+  } catch (error) {
+    console.error("Error updating cloud to video mapping:", error);
+    throw error;
+  }
+}
+
+export function listenToCloudToVideo(
+  callback: (mapping: Record<number, string>) => void
+) {
+  if (!db) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+  const cloudToVideoRef = ref(db, "indexToVideo");
+  onValue(cloudToVideoRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      callback(data as Record<number, string>);
+    }
+  });
+
+  // Return a function to unsubscribe
+  return () => off(cloudToVideoRef);
+}
 
 export { db, storage };
+
+export async function checkVideoExists(filename: string): Promise<boolean> {
+  if (!storage) {
+    throw new Error(
+      "Firebase has not been initialized. Call initializeFirebase() first."
+    );
+  }
+
+  const videoRef = storageRef(storage, `videos/${filename}`);
+  try {
+    await getDownloadURL(videoRef);
+    return true;
+  } catch (error: unknown) {
+    if (error instanceof Error && 'code' in error) {
+      if (error.code === "storage/object-not-found") {
+        return false;
+      }
+    }
+    console.error("Error checking if video exists:", error);
+    throw error;
+  }
+}

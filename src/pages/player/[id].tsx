@@ -4,7 +4,7 @@ import {
   initializeFirebase,
   listenToIndex,
   getVideoUrl,
-  checkVideoExists,
+  listenToCloudToVideo,
   getRandomVideoUrl,
 } from "../../lib/firebase";
 
@@ -13,6 +13,9 @@ export default function PlayerPage() {
   const { id } = router.query;
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [cloudToVideoMapping, setCloudToVideoMapping] = useState<
+    Record<number, string>
+  >({});
 
   const pageRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -44,6 +47,18 @@ export default function PlayerPage() {
   }, []);
 
   useEffect(() => {
+    initializeFirebase();
+
+    const unsubscribeCloudToVideo = listenToCloudToVideo((mapping) => {
+      setCloudToVideoMapping(mapping);
+    });
+
+    return () => {
+      unsubscribeCloudToVideo();
+    };
+  }, []);
+
+  useEffect(() => {
     setVideoEnded(false);
     if (videoRef.current) {
       const videoElement = videoRef.current;
@@ -68,35 +83,33 @@ export default function PlayerPage() {
   }, [id, videoUrl]);
 
   useEffect(() => {
-    initializeFirebase();
-
     if (id === "0" || id === "1") {
       const unsubscribe = listenToIndex(async (timestamp, newIndex) => {
-        // if (newIndex % 2 !== parseInt(id)) {
-        if (false) {
-          return;
-        } else {
-          try {
+        try {
+          console.log(
+            "Fetching video URL for index:",
+            newIndex,
+            "at timestamp:",
+            timestamp
+          );
+          const filename = cloudToVideoMapping[newIndex];
+          if (filename) {
+            const url = await getVideoUrl(filename);
+            setVideoUrl(url);
+          } else {
+            const randomUrl = await getRandomVideoUrl();
             console.log(
-              "Fetching video URL for index:",
-              newIndex,
-              "at timestamp:",
-              timestamp
+              `No videos for index ${newIndex}, fetched random video: ${randomUrl}`
             );
-            const videoExists = await checkVideoExists(newIndex);
-            if (videoExists) {
-              const url = await getVideoUrl(newIndex);
-              setVideoUrl(url);
-            } else {
-              const randomUrl = await getRandomVideoUrl();
-              console.log(
-                `No videos for index ${newIndex}, fetched random video: ${randomUrl}`
-              );
-              setVideoUrl(randomUrl);
-            }
-          } catch (error) {
-            console.error("Error fetching video URL:", error);
+            setVideoUrl(randomUrl);
           }
+        } catch (error) {
+          console.error("Error fetching video URL:", error);
+          const randomUrl = await getRandomVideoUrl();
+          console.log(
+            `No videos for index ${newIndex}, fetched random video: ${randomUrl}`
+          );
+          setVideoUrl(randomUrl);
         }
       });
 
@@ -104,7 +117,7 @@ export default function PlayerPage() {
         unsubscribe();
       };
     }
-  }, [id]);
+  }, [id, cloudToVideoMapping]);
 
   if (!id || (id !== "0" && id !== "1")) {
     return <div>Invalid player ID. Must be 0 or 1.</div>;
