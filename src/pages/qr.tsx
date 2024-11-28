@@ -35,7 +35,10 @@ export default function QRUploadPage() {
           className="mb-8"
         />
       )}
-      <h1 className="font-georgia text-2xl mb-8 text-center text-black"> {uploadUrl}</h1>
+      <h1 className="font-georgia text-sm mb-8 text-center text-black">
+        {" "}
+        {uploadUrl}
+      </h1>
     </div>
   );
 }

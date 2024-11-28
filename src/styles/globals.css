@@ -9,7 +9,7 @@ body,
 }
 
 .clicked {
-  animation: clickEffect 45s ease-out forwards;
+  animation: clickEffect 120s ease-out forwards;
 }
 
 .hovered {
