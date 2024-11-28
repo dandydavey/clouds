@@ -7,6 +7,7 @@ import {
   listenToIdlePlayers,
   listenToActivePlayers,
   updateIdlePlayers,
+  updateActivePlayers,
 } from "../lib/firebase";
 
 interface CloudSvgProps {
@@ -75,6 +76,8 @@ export default function ClickAreas({
 
   useEffect(() => {
     updateIdlePlayers(Array.from({ length: numPlayers }, (_, i) => i));
+    updateActivePlayers([]);
+
     const unsubscribeCloud = listenToCloudToVideo((mapping) => {
       setCloudToVideo(mapping);
     });
@@ -141,6 +144,7 @@ export default function ClickAreas({
           console.log("has an idle player: ", idlePlayersRef.current[0]);
           targetPlayer = idlePlayersRef.current[0];
         } else if (activePlayersRef.current.length > 0) {
+          console.log("has an active player: ", activePlayersRef.current[0]);
           targetPlayer = activePlayersRef.current[0];
         }
         if (targetPlayer !== undefined) {
