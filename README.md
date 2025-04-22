@@ -1,40 +1,15 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Sky Above the Clouds - Digital Experience
 
-## Getting Started
+This digital experience was created for the Paper Moon Artist Residency Final Show, drawing inspiration from Georgia O'Keeffe's masterpiece "Sky Above the Clouds IV" - her largest completed painting.
 
-First, run the development server:
+## About the Project
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+In building this digital experience, I aim to reimagine technology's role in our lives - shifting away from advertisement-driven attention addiction toward creating spaces for peace and contemplation. This interactive piece invites viewers to explore a gentler side of digital interaction, one that fosters appreciation and mindfulness.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+In this interactive experience, I invite the viewer to revisit forgotten moments and past sights seen. As a form of digital gift giving, please feel free to leave a memory for the next viewer to discover.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+Each shared memory becomes part of a collective experience, creating an evolving digital landscape of human recollections.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+---
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+_"Sky Above the Clouds IV" (1965) by Georgia O'Keeffe is housed at the Art Institute of Chicago_
